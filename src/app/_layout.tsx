@@ -1,18 +1,42 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
-
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
-
-SplashScreen.preventAutoHideAsync();
+import { Tabs } from 'expo-router';
+import { useColorScheme, Text } from 'react-native';
+import '../global.css'; // Make sure global css is imported for NativeWind
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+          borderTopColor: isDark ? '#1E293B' : '#E2E8F0',
+        },
+        tabBarActiveTintColor: isDark ? '#818CF8' : '#4F46E5', // Indigo
+        tabBarInactiveTintColor: isDark ? '#64748B' : '#94A3B8',
+      }}>
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Network',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 24 }}>🕸️</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="inbox"
+        options={{
+          title: 'Drafts',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 24 }}>📬</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="contact/[id]"
+        options={{
+          href: null, // Hide from the tab bar
+        }}
+      />
+    </Tabs>
   );
 }
