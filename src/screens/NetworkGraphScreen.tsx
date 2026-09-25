@@ -3,6 +3,7 @@ import { View, Text, Dimensions } from 'react-native';
 import Svg, { Line, Circle, G, Text as SvgText } from 'react-native-svg';
 import { useStore } from '../store/useStore';
 import { useRouter } from 'expo-router';
+import FloatingChat from '../components/FloatingChat';
 
 const { width } = Dimensions.get('window');
 const HEIGHT = 400;
@@ -34,8 +35,8 @@ export default function NetworkGraphScreen() {
         <Svg width="100%" height="100%">
           {/* Draw Edges (Relationships) */}
           {relationships.map((rel) => {
-            const sourceNode = nodes.find(n => n.id === rel.sourceId);
-            const targetNode = nodes.find(n => n.id === rel.targetId);
+            const sourceNode = nodes.find(n => n.id === rel.sourcePerson?.id);
+            const targetNode = nodes.find(n => n.id === rel.targetPerson?.id);
             if (!sourceNode || !targetNode) return null;
             return (
               <Line
@@ -62,11 +63,11 @@ export default function NetworkGraphScreen() {
                 y="5"
                 textAnchor="middle"
               >
-                {node.firstName[0]}{node.lastName[0]}
+                {node.firstName?.[0] || ''}{node.lastName?.[0] || ''}
               </SvgText>
               
               {/* Render Badges as small colored dots below the node */}
-              {node.badges.map((badge, idx) => (
+              {node.badges && node.badges.map((badge, idx) => (
                 <Circle
                   key={badge.id}
                   r="4"
@@ -79,6 +80,7 @@ export default function NetworkGraphScreen() {
           ))}
         </Svg>
       </View>
+      <FloatingChat />
     </View>
   );
 }

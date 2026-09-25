@@ -11,7 +11,7 @@ export default function AgentDraftsInboxScreen() {
 
   const handleEdit = (draft: AgentDraft) => {
     setEditingId(draft.id);
-    setEditContent(draft.content);
+    setEditContent(draft.draftContent);
   };
 
   const handleSave = () => {
@@ -30,10 +30,22 @@ export default function AgentDraftsInboxScreen() {
   return (
     <View className="flex-1 bg-gray-900 p-4">
       <View className="flex-row items-center justify-between mb-6 mt-10">
-        <Text className="text-2xl font-bold text-white">Agent Inbox</Text>
-        <View className="bg-red-500 rounded-full w-8 h-8 items-center justify-center">
-          <Text className="text-white font-bold">{pendingDrafts.length}</Text>
+        <View className="flex-row items-center space-x-3">
+          <Text className="text-2xl font-bold text-white">Agent Inbox</Text>
+          <View className="bg-red-500 rounded-full px-3 py-1 items-center justify-center">
+            <Text className="text-white font-bold">{pendingDrafts.length}</Text>
+          </View>
         </View>
+        <TouchableOpacity 
+          onPress={async () => {
+            await fetch('http://localhost:8080/api/drafts/generate', { method: 'POST' });
+            alert('Agent cron triggered!');
+            setTimeout(() => useStore.getState().fetchData(), 2000);
+          }}
+          className="bg-emerald-600 px-4 py-2 rounded-xl"
+        >
+          <Text className="text-white font-bold text-sm">Generate Drafts</Text>
+        </TouchableOpacity>
       </View>
       
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 20 }}>
@@ -47,7 +59,7 @@ export default function AgentDraftsInboxScreen() {
             <View key={draft.id} className="bg-gray-800 rounded-2xl p-5 border border-gray-700 mb-4">
               {/* Draft Header */}
               <View className="flex-row justify-between items-center mb-4">
-                <Text className="text-lg text-blue-400 font-bold">To: {draft.contactName}</Text>
+                <Text className="text-lg text-blue-400 font-bold">To: {draft.contact?.firstName} {draft.contact?.lastName}</Text>
                 <View className="bg-blue-500/20 px-3 py-1 rounded-full border border-blue-500/50">
                   <Text className="text-blue-400 text-xs font-bold uppercase tracking-wider">AI Generated</Text>
                 </View>
@@ -63,7 +75,7 @@ export default function AgentDraftsInboxScreen() {
                   textAlignVertical="top"
                 />
               ) : (
-                <Text className="text-gray-300 text-base mb-5 leading-6">{draft.content}</Text>
+                <Text className="text-gray-300 text-base mb-5 leading-6">{draft.draftContent}</Text>
               )}
 
               {/* Action Buttons */}

@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore';
 
 export default function ContactDetailScreen({ contactId }: { contactId: string }) {
   // If no contactId provided, default to 'c1' for demo fallback
-  const idToUse = contactId || 'c1'; 
+  const idToUse = contactId || '22222222-1111-1111-1111-111111111111'; 
   const contact = useStore(state => state.contacts.find(c => c.id === idToUse));
 
   if (!contact) {
@@ -43,11 +43,11 @@ export default function ContactDetailScreen({ contactId }: { contactId: string }
       <View className="bg-gray-800 rounded-2xl p-5 border border-gray-700">
         <Text className="text-xl font-bold text-white mb-6">Interaction Timeline</Text>
         
-        {contact.lineage.length === 0 ? (
+        {contact.lineages.length === 0 ? (
           <Text className="text-gray-400 italic">No past interactions recorded.</Text>
         ) : (
           <View className="pl-4 border-l-2 border-gray-700 ml-2 space-y-8 pb-4">
-            {contact.lineage.map((interaction, index) => {
+            {contact.lineages.map((interaction, index) => {
               const dateStr = new Date(interaction.interactionDate).toLocaleDateString();
               return (
                 <View key={interaction.id} className="relative">

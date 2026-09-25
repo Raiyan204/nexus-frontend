@@ -15,24 +15,29 @@ export interface InteractionLineage {
 
 export interface Contact {
   id: string;
+  name: string;
   firstName: string;
   lastName: string;
+  email?: string;
+  phoneNumber?: string;
+  address?: string;
+  comment?: string;
+  socialMediaLinks?: string;
   badges: Badge[];
-  lineage: InteractionLineage[];
+  lineages: InteractionLineage[];
 }
 
 export interface Relationship {
   id: string;
-  sourceId: string;
-  targetId: string;
-  type: string;
+  sourcePerson: { id: string };
+  targetPerson: { id: string };
+  relationshipType: string;
 }
 
 export interface AgentDraft {
   id: string;
-  contactId: string;
-  contactName: string;
-  content: string;
+  contact: Contact;
+  draftContent: string;
   status: 'PENDING' | 'SENT';
 }
 
@@ -40,62 +45,61 @@ interface AppState {
   contacts: Contact[];
   relationships: Relationship[];
   agentDrafts: AgentDraft[];
-  sendDraft: (id: string) => void;
-  updateDraft: (id: string, content: string) => void;
+  fetchData: () => Promise<void>;
+  sendDraft: (id: string) => Promise<void>;
+  updateDraft: (id: string, content: string) => Promise<void>;
 }
 
-// Mock Data representing the database state
-const mockBadges = [
-  { id: 'b1', name: 'VIP', colorHex: '#fbbf24' },
-  { id: 'b2', name: 'Alumni', colorHex: '#3b82f6' },
-  { id: 'b3', name: 'Investor', colorHex: '#10b981' }
-];
-
 export const useStore = create<AppState>((set) => ({
-  contacts: [
-    {
-      id: 'c1',
-      firstName: 'Alice',
-      lastName: 'Smith',
-      badges: [mockBadges[0], mockBadges[1]],
-      lineage: [
-        { id: 'l1', interactionDate: '2025-01-15T10:00:00Z', interactionType: 'Coffee Meeting', summary: 'Discussed Q1 roadmap and overall strategy.' },
-        { id: 'l2', interactionDate: '2025-03-20T14:30:00Z', interactionType: 'Email', summary: 'Sent follow-up on the new project.' }
-      ]
-    },
-    {
-      id: 'c2',
-      firstName: 'Bob',
-      lastName: 'Johnson',
-      badges: [mockBadges[2]],
-      lineage: []
-    },
-    {
-      id: 'c3',
-      firstName: 'Charlie',
-      lastName: 'Davis',
-      badges: [],
-      lineage: []
+  contacts: [],
+  relationships: [],
+  agentDrafts: [],
+  
+  fetchData: async () => {
+    try {
+      const [contactsRes, relsRes, draftsRes] = await Promise.all([
+        fetch('http://localhost:8080/api/contacts'),
+        fetch('http://localhost:8080/api/relationships'),
+        fetch('http://localhost:8080/api/drafts/pending')
+      ]);
+      
+      const contacts = await contactsRes.json();
+      const relationships = await relsRes.json();
+      const agentDrafts = await draftsRes.json();
+      
+      set({ contacts, relationships, agentDrafts });
+    } catch (error) {
+      console.error("Failed to fetch data", error);
     }
-  ],
-  relationships: [
-    { id: 'r1', sourceId: 'c1', targetId: 'c2', type: 'Colleague' },
-    { id: 'r2', sourceId: 'c2', targetId: 'c3', type: 'Introduced By' },
-    { id: 'r3', sourceId: 'c3', targetId: 'c1', type: 'Mentor' }
-  ],
-  agentDrafts: [
-    {
-      id: 'd1',
-      contactId: 'c2',
-      contactName: 'Bob Johnson',
-      content: "Hi Bob, it's been over 6 months since we last connected! I wanted to check in and see how your portfolio is doing since you became an Investor. Would love to grab coffee next week.",
-      status: 'PENDING'
+  },
+
+  sendDraft: async (id) => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/drafts/${id}/send`, { method: 'POST' });
+      if (res.ok) {
+        set((state) => ({
+          agentDrafts: state.agentDrafts.map(d => d.id === id ? { ...d, status: 'SENT' } : d)
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to send draft", error);
     }
-  ],
-  sendDraft: (id) => set((state) => ({
-    agentDrafts: state.agentDrafts.map(d => d.id === id ? { ...d, status: 'SENT' } : d)
-  })),
-  updateDraft: (id, content) => set((state) => ({
-    agentDrafts: state.agentDrafts.map(d => d.id === id ? { ...d, content } : d)
-  }))
+  },
+
+  updateDraft: async (id, content) => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/drafts/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+      if (res.ok) {
+        set((state) => ({
+          agentDrafts: state.agentDrafts.map(d => d.id === id ? { ...d, draftContent: content } : d)
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to update draft", error);
+    }
+  }
 }));
