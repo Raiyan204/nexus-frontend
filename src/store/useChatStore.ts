@@ -71,6 +71,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
       onDisconnect: () => {
         set({ isConnected: false });
       },
+      onWebSocketClose: () => {
+        set({ isConnected: false });
+      },
       onStompError: (frame) => {
         console.error('Broker reported error: ' + frame.headers['message']);
         console.error('Additional details: ' + frame.body);
@@ -101,7 +104,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     
     get().addMessage(userMsg);
 
-    if (stompClient && isConnected) {
+    if (stompClient && stompClient.connected) {
       stompClient.publish({
         destination: '/app/chat',
         body: JSON.stringify(userMsg)

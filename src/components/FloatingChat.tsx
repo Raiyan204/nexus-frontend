@@ -6,11 +6,34 @@ export default function FloatingChat() {
   const { messages, isConnected, isChatOpen, toggleChat, connect, disconnect, sendMessage } = useChatStore();
   const [inputText, setInputText] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
+  const [aiEnabled, setAiEnabled] = useState<boolean | null>(null);
 
+  // Connect WebSocket on mount
   useEffect(() => {
     connect();
     return () => disconnect();
   }, []);
+
+  // Fetch feature flag to determine if AI chat should be shown
+  useEffect(() => {
+    const fetchFlag = async () => {
+      try {
+        const res = await fetch('/api/feature-flags');
+        if (!res.ok) throw new Error('Failed to fetch feature flags');
+        const data = await res.json();
+        setAiEnabled(!!data.aiEnabled);
+      } catch (e) {
+        console.error(e);
+        setAiEnabled(false);
+      }
+    };
+    fetchFlag();
+  }, []);
+
+  // If AI feature is disabled, render nothing (or could render a placeholder)
+  if (aiEnabled === false) {
+    return null;
+  }
 
   const handleSend = () => {
     if (inputText.trim()) {
@@ -21,7 +44,7 @@ export default function FloatingChat() {
 
   if (!isChatOpen) {
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.floatingButton}
         onPress={toggleChat}
         className="bg-blue-600 shadow-lg items-center justify-center rounded-full"
@@ -45,7 +68,7 @@ export default function FloatingChat() {
       </View>
 
       {/* Messages */}
-      <ScrollView 
+      <ScrollView
         className="flex-1 p-4"
         ref={scrollViewRef}
         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
@@ -56,7 +79,7 @@ export default function FloatingChat() {
               <Text className="text-white">{msg.content}</Text>
             </View>
             <Text className={`text-xs text-gray-500 mt-1 ${msg.sender === 'USER' ? 'text-right' : 'text-left'}`}>
-              {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+              {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
           </View>
         ))}
@@ -73,7 +96,7 @@ export default function FloatingChat() {
             onChangeText={setInputText}
             onSubmitEditing={handleSend}
           />
-          <TouchableOpacity 
+          <TouchableOpacity
             className={`ml-2 p-3 rounded-full ${inputText.trim() ? 'bg-blue-600' : 'bg-gray-700'}`}
             onPress={handleSend}
             disabled={!inputText.trim()}
@@ -94,6 +117,14 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     zIndex: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4f46e5',
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
   },
   chatContainer: {
     position: 'absolute',
@@ -102,5 +133,8 @@ const styles = StyleSheet.create({
     width: Platform.OS === 'web' ? 380 : '100%',
     height: Platform.OS === 'web' ? 600 : '60%',
     zIndex: 999,
-  }
+    backgroundColor: '#1f2937',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
 });
