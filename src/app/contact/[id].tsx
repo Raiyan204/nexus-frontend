@@ -1,15 +1,35 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useStore } from '../../store/useStore';
-import { Contact, InteractionLineage } from '../../types';
+import { useStore, Contact, InteractionLineage, Badge } from '../../store/useStore';
+import { TextInput } from 'react-native';
 
 export default function ContactDetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { contacts } = useStore();
+  const { contacts, allBadges, updateContact } = useStore();
   
   const contact: Contact | undefined = contacts.find(c => c.id === id);
+  const [isEditingSocial, setIsEditingSocial] = React.useState(false);
+  const [socialLinks, setSocialLinks] = React.useState(contact?.socialMediaLinks || '');
+  const [showBadgeSelector, setShowBadgeSelector] = React.useState(false);
+
+  const handleSaveSocial = () => {
+    if (contact) {
+      updateContact(contact.id, { socialMediaLinks: socialLinks });
+      setIsEditingSocial(false);
+    }
+  };
+
+  const handleAddBadge = (badge: Badge) => {
+    if (contact) {
+      const currentBadges = contact.badges || [];
+      if (!currentBadges.find(b => b.id === badge.id)) {
+        updateContact(contact.id, { badges: [...currentBadges, badge] });
+      }
+      setShowBadgeSelector(false);
+    }
+  };
 
   if (!contact) {
     return (
@@ -42,23 +62,52 @@ export default function ContactDetailsScreen() {
             <Text className="text-white text-lg">{contact.phoneNumber || 'N/A'}</Text>
           </View>
           <View className="bg-gray-800 p-4 rounded-xl flex-1 min-w-[250px] border border-gray-700/50 shadow-lg">
-            <Text className="text-gray-400 text-sm uppercase tracking-widest mb-1">LinkedIn</Text>
-            <Text className="text-blue-400 text-lg">{contact.linkedinUrl || 'N/A'}</Text>
+            <View className="flex-row justify-between items-center mb-1">
+              <Text className="text-gray-400 text-sm uppercase tracking-widest">Other Social Links</Text>
+              <TouchableOpacity onPress={() => isEditingSocial ? handleSaveSocial() : setIsEditingSocial(true)}>
+                <Text className="text-blue-400 font-bold">{isEditingSocial ? 'Save' : 'Edit'}</Text>
+              </TouchableOpacity>
+            </View>
+            {isEditingSocial ? (
+              <TextInput 
+                className="text-white bg-gray-900 p-2 rounded border border-gray-600"
+                value={socialLinks}
+                onChangeText={setSocialLinks}
+                placeholder="e.g. twitter.com/user, github.com/user"
+                placeholderTextColor="#666"
+              />
+            ) : (
+              <Text className="text-blue-400 text-lg">{contact.socialMediaLinks || 'None added'}</Text>
+            )}
           </View>
         </View>
 
-        {contact.badges && contact.badges.length > 0 && (
-          <View className="mb-8">
-            <Text className="text-2xl font-bold text-white mb-4">Tags & Badges</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {contact.badges.map(badge => (
-                <View key={badge.id} style={{ backgroundColor: badge.colorHex + '20', borderColor: badge.colorHex }} className="px-3 py-1 rounded-full border">
+        <View className="mb-8">
+          <View className="flex-row justify-between items-end mb-4">
+            <Text className="text-2xl font-bold text-white">Tags & Badges</Text>
+            <TouchableOpacity onPress={() => setShowBadgeSelector(!showBadgeSelector)} className="px-3 py-1.5 bg-blue-600/20 rounded-lg border border-blue-500/30">
+              <Text className="text-blue-400 font-medium">+ Add Badge</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {showBadgeSelector && (
+            <View className="flex-row flex-wrap gap-2 mb-4 p-4 bg-gray-800 rounded-xl border border-gray-700">
+              {allBadges.map(badge => (
+                <TouchableOpacity key={badge.id} onPress={() => handleAddBadge(badge)} style={{ backgroundColor: badge.colorHex + '40', borderColor: badge.colorHex }} className="px-3 py-1 rounded-full border">
                   <Text style={{ color: badge.colorHex }} className="font-semibold">{badge.name}</Text>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
+          )}
+
+          <View className="flex-row flex-wrap gap-2">
+            {contact.badges && contact.badges.length > 0 ? contact.badges.map(badge => (
+              <View key={badge.id} style={{ backgroundColor: badge.colorHex + '20', borderColor: badge.colorHex }} className="px-3 py-1 rounded-full border">
+                <Text style={{ color: badge.colorHex }} className="font-semibold">{badge.name}</Text>
+              </View>
+            )) : <Text className="text-gray-500">No badges assigned.</Text>}
           </View>
-        )}
+        </View>
 
         <View className="mb-8">
           <View className="flex-row justify-between items-end mb-4">

@@ -12,6 +12,8 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import dagre from "dagre";
+import { useStore } from '../store/useStore';
+import { API_BASE_URL } from '../constants/config';
 
 const dagreGraph = new dagre.graphlib.Graph();
 dagreGraph.setDefaultEdgeLabel(() => ({}));
@@ -32,8 +34,8 @@ export type PersonDto = {
 
 export type RelationshipDto = {
   id: string;
-  sourcePersonId: string;
-  targetPersonId: string;
+  sourcePerson: { id: string };
+  targetPerson: { id: string };
   relationshipType: string;
 };
 
@@ -60,26 +62,21 @@ type Props = {
 export const NetworkGraph: React.FC<Props> = ({ onNodeClick }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node[]>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge[]>([]);
+  
+  const { contacts, relationships } = useStore();
 
-  const loadData = useCallback(async () => {
-    const [peopleRes, relRes] = await Promise.all([
-      fetch("/api/persons"),
-      fetch("/api/relationships"),
-    ]);
-    const people: PersonDto[] = await peopleRes.json();
-    const rels: RelationshipDto[] = await relRes.json();
-
-    const loadedNodes: Node[] = people.map((p) => ({
+  const loadData = useCallback(() => {
+    const loadedNodes: Node[] = contacts.map((p) => ({
       id: p.id,
-      data: { label: p.name },
+      data: { label: `${p.firstName} ${p.lastName}` },
       type: "default",
-      position: { x: 0, y: 0 }, // placeholder – will be positioned by Dagre
+      position: { x: 0, y: 0 },
     }));
 
-    const loadedEdges: Edge[] = rels.map((r) => ({
+    const loadedEdges: Edge[] = relationships.map((r) => ({
       id: r.id,
-      source: r.sourcePersonId,
-      target: r.targetPersonId,
+      source: r.sourcePerson.id,
+      target: r.targetPerson.id,
       label: r.relationshipType,
       animated: false,
     }));
@@ -87,7 +84,7 @@ export const NetworkGraph: React.FC<Props> = ({ onNodeClick }) => {
     const arranged = applyDagreLayout(loadedNodes, loadedEdges);
     setNodes(arranged);
     setEdges(loadedEdges);
-  }, [setNodes, setEdges]);
+  }, [contacts, relationships, setNodes, setEdges]);
 
   useEffect(() => {
     loadData();
@@ -101,15 +98,20 @@ export const NetworkGraph: React.FC<Props> = ({ onNodeClick }) => {
       label: "relationship",
     };
     setEdges((eds) => addEdge(newEdge, eds));
-    await fetch("/api/relationships", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sourcePersonId: connection.source,
-        targetPersonId: connection.target,
-        relationshipType: "relationship",
-      }),
-    });
+    try {
+      await fetch(`${API_BASE_URL}/api/relationships`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourcePersonId: connection.source,
+          targetPersonId: connection.target,
+          relationshipType: "Colleague",
+        }),
+      });
+      useStore.getState().fetchData();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {

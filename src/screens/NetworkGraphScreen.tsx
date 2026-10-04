@@ -1,22 +1,23 @@
 import React, { useMemo } from 'react';
-import { View, Text, Dimensions } from 'react-native';
-import Svg, { Line, Circle, G, Text as SvgText } from 'react-native-svg';
+import { View, Text, useWindowDimensions } from 'react-native';
+import Svg, { Line, Circle, G, Text as SvgText, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { useStore } from '../store/useStore';
 import { useRouter } from 'expo-router';
 import FloatingChat from '../components/FloatingChat';
 
-const { width } = Dimensions.get('window');
-const HEIGHT = 400;
-
 export default function NetworkGraphScreen() {
   const { contacts, relationships } = useStore();
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
+
+  // Make the graph fill the available space beautifully
+  const graphHeight = Math.max(height - 150, 400);
 
   // Simple circle layout for graph nodes
   const nodes = useMemo(() => {
-    const radius = 110;
+    const radius = Math.min(width, graphHeight) / 2.5;
     const centerX = width / 2;
-    const centerY = HEIGHT / 2;
+    const centerY = graphHeight / 2;
     
     return contacts.map((contact, index) => {
       const angle = (index / contacts.length) * 2 * Math.PI;
@@ -26,13 +27,23 @@ export default function NetworkGraphScreen() {
         y: centerY + radius * Math.sin(angle),
       };
     });
-  }, [contacts]);
+  }, [contacts, width, graphHeight]);
 
   return (
-    <View className="flex-1 bg-gray-900 p-4">
-      <Text className="text-2xl font-bold text-white mb-4 mt-8">Network Map</Text>
-      <View className="bg-gray-800 rounded-xl overflow-hidden" style={{ height: HEIGHT }}>
+    <View className="flex-1 bg-[#0B0F19] p-4">
+      <View className="flex-row justify-between items-center mb-4 mt-8 px-2">
+        <Text className="text-3xl font-extrabold text-white tracking-tight">Network Map</Text>
+        <Text className="text-gray-400 text-sm font-semibold tracking-widest uppercase">{contacts.length} Nodes</Text>
+      </View>
+      <View className="bg-[#111827] rounded-3xl overflow-hidden border border-gray-800 shadow-2xl" style={{ height: graphHeight }}>
         <Svg width="100%" height="100%">
+          <Defs>
+            <RadialGradient id="glow" cx="50%" cy="50%" rx="50%" ry="50%">
+              <Stop offset="0%" stopColor="#4F46E5" stopOpacity="0.3" />
+              <Stop offset="100%" stopColor="#0B0F19" stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          
           {/* Draw Edges (Relationships) */}
           {relationships.map((rel) => {
             const sourceNode = nodes.find(n => n.id === rel.sourcePerson?.id);
@@ -45,8 +56,9 @@ export default function NetworkGraphScreen() {
                 y1={sourceNode.y}
                 x2={targetNode.x}
                 y2={targetNode.y}
-                stroke="#4b5563"
+                stroke="#374151"
                 strokeWidth="2"
+                strokeDasharray="5,5"
               />
             );
           })}

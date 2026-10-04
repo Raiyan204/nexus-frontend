@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useStore } from './useStore';
+import { WS_BASE_URL } from '../constants/config';
 
 export interface ChatMessage {
   id: string;
@@ -40,7 +41,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   connect: () => {
     if (get().stompClient?.connected) return;
 
-    const socket = new SockJS('http://localhost:8080/ws-chat');
+    const socket = new SockJS(WS_BASE_URL);
     
     // In React Native Web / Expo, text-encoding is occasionally needed if STOMP complains about TextEncoder,
     // but usually @stomp/stompjs handles it.

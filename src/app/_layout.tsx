@@ -4,14 +4,19 @@ import '../global.css'; // Make sure global css is imported for NativeWind
 
 import { useEffect } from 'react';
 import { useStore } from '../store/useStore';
+import { useUserStore } from '../store/useUserStore';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   
   const fetchData = useStore(state => state.fetchData);
+  const { fetchProfile, fetchFlags } = useUserStore();
+
   useEffect(() => {
     fetchData();
+    fetchProfile();
+    fetchFlags();
   }, [fetchData]);
 
   return (
@@ -28,7 +33,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Network',
+          title: 'Dashboard',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 24 }}>🏠</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Map',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 24 }}>🕸️</Text>,
         }}
       />
@@ -37,6 +49,13 @@ export default function TabLayout() {
         options={{
           title: 'Drafts',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 24 }}>📬</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="pricing"
+        options={{
+          title: 'Pro',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 24 }}>💎</Text>,
         }}
       />
       <Tabs.Screen
